@@ -41,12 +41,7 @@ def main():
 
     print('digraph "Firn" {')
     for height in sorted(cache['blocks'].keys()):
-        #print('Height', height)
-        #print(f"\tsubgraph cluster_{height} {{")
-        #print(f'\t\tlabel = "block {height}";')
         for tx in cache['blocks'][height]:
-            #print(f"\t\tsubgraph cluster_{shorthex(tx)} {{")
-            #print(f'\t\t\tlabel = "tx {shorthex(tx)}";')
             for e in cache['blocks'][height][tx]:
                 if e['event'] == 'RegisterOccurred':
                     account = e['args']['account']
@@ -57,11 +52,11 @@ def main():
                     total_deposits[account]= amount
                     print(f'\t\th{height}_tx{shorthex(tx)} [label="{amount}", style=filled, fillcolor="green"];')
                     print(f"\t\taddr_{sender} -> h{height}_tx{shorthex(tx)};")
-                    #print(f'\t\t\th{height}_tx{shorthex(tx)}_{shorthex(account)} [label="+{amount}", tooltip="{shorthex(account)} = {amount}"];')
-                    #print(f'\t\t\th{height}_tx{shorthex(tx)} -> h{height}_tx{shorthex(tx)}_{shorthex(account)};')
                 elif e['event'] == 'WithdrawalOccurred':
                     amount = e['args']['amount']
-                    #print(f'\t\th{height}_tx{shorthex(tx)} [label="{amount}", style=filled, fillcolor="red"];')
+                    destination = e["args"]["destination"]
+                    print(f'\t\th{height}_tx{shorthex(tx)} [label="{amount}", style=filled, fillcolor="red"];')
+                    print(f'\t\th{height}_tx{shorthex(tx)} -> addr_{destination};')
                     filtered_accounts = []
                     for account in e['args']['Y']:
                         if account == bytes([0]*32):
@@ -77,9 +72,8 @@ def main():
                             sources[s.deposit] += s.chance * (1/len(filtered_accounts))
                         nb = PossibleBalance(height, new_balance, tx, pb.sources)
                         balances[account].append(nb)
-                    destination = e["args"]["destination"]
                     for d, p in sources.items():
-                        print(f'\t\th{d.height}_tx{shorthex(d.tx)} -> addr_{destination} [weight={max(1,int(p*20))}, penwidth={max(1,int(p*20))}, len={10-max(1,int(p*10))}];')
+                        print(f'\t\th{d.height}_tx{shorthex(d.tx)} -> h{height}_tx{shorthex(tx)} [label="{round(p,2)}", len="{11-max(1,int(p*10))}"];')
                 elif e['event'] == 'DepositOccurred':
                     amount = e['args']['amount']
                     source = e['args']['source']
@@ -98,8 +92,6 @@ def main():
                     raise RuntimeError('Transfer unhandled!', e)
                 else:
                     raise RuntimeError('Unhandled error', e)
-            #print("\t\t}")  # end of tx cluster
-        #print("\t}")  # end of height cluster
     print("}")
 if __name__ == "__main__":
     main()
